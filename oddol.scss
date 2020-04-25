@@ -1,0 +1,36 @@
+@use "@material/top-app-bar/mdc-top-app-bar";
+@use "@material/icon-button/mdc-icon-button";
+@use "@material/drawer/mdc-drawer";
+@use "@material/list/mdc-list";
+
+.mdc-top-app-bar {
+   background-color: #00c853;
+}
+
+.mdc-drawer .mdc-list-item--activated .mdc-list-item__graphic {
+  color: #00c853;
+}
+
+.mdc-drawer .mdc-list-item--activated {
+  color: #00c853;
+}
+.mdc-drawer-app-content {
+  flex: auto;
+  overflow: auto;
+  position: relative;
+}
+
+.main-content {
+  overflow: auto;
+  height: 100%;
+}
+
+.app-bar {
+  position: absolute;
+}
+
+
+// only apply this style if below top app bar
+.mdc-top-app-bar {
+  z-index: 7;
+}
