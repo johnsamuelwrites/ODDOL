@@ -1,50 +1,137 @@
 <html>
-    <head>
-        <title>ODDOL: Open Data Driven Online Learning</title>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-	<link rel="stylesheet" href="bundle.css">
-    </head>
-    <body>
-      <header class="mdc-top-app-bar app-bar" id="app-bar">
-        <div class="mdc-top-app-bar__row">
-          <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
-            <button class="material-icons mdc-top-app-bar__navigation-icon mdc-icon-button">menu</button>
-            <span class="mdc-top-app-bar__title">ODDOL</span>
-          </section>
-         <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
-          <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Download">file_download</button>
-          <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Upload">cloud_upload</button>
-          <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Share this page">share</button>
-        </section>
-        </div>
-      </header>
-      <aside class="mdc-drawer mdc-drawer--dismissible mdc-top-app-bar--fixed-adjust">
-        <div class="mdc-drawer__content">
-          <div class="mdc-list">
-            <a class="mdc-list-item" href="#">
-              <i class="material-icons mdc-list-item__graphic" aria-hidden="true">pageview</i>
-              <span class="mdc-list-item__text">View</span>
-            </a>
-            <a class="mdc-list-item" href="#">
-              <i class="material-icons mdc-list-item__graphic" aria-hidden="true">import_export</i>
-              <span class="mdc-list-item__text">Import/Export</span>
-            </a>
-            <a class="mdc-list-item" href="#">
-              <i class="material-icons mdc-list-item__graphic" aria-hidden="true">clear_all</i>
-              <span class="mdc-list-item__text">Clear</span>
-            </a>
-            <a class="mdc-list-item" href="#">
-              <i class="material-icons mdc-list-item__graphic" aria-hidden="true">help</i>
-              <span class="mdc-list-item__text">About</span>
-            </a>
+
+<head>
+  <title>ODDOL: Open Data Driven Online Learning</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="stylesheet" href="bundle.css" />
+</head>
+
+<body>
+  <header class="mdc-top-app-bar app-bar" id="app-bar">
+    <div class="mdc-top-app-bar__row">
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+        <button class="material-icons mdc-top-app-bar__navigation-icon mdc-icon-button">menu</button>
+        <span class="mdc-top-app-bar__title">ODDOL</span>
+      </section>
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+        <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button"
+          aria-label="Download">file_download</button>
+        <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button"
+          aria-label="Upload">cloud_upload</button>
+        <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button"
+          aria-label="Share this page">share</button>
+      </section>
+    </div>
+  </header>
+  <aside class="mdc-drawer mdc-drawer--dismissible mdc-top-app-bar--fixed-adjust">
+    <div class="mdc-drawer__content">
+      <div class="mdc-list">
+        <a class="mdc-list-item" href="#">
+          <i class="material-icons mdc-list-item__graphic" aria-hidden="true">pageview</i>
+          <span class="mdc-list-item__text">View</span>
+        </a>
+        <a class="mdc-list-item" href="#">
+          <i class="material-icons mdc-list-item__graphic" aria-hidden="true">import_export</i>
+          <span class="mdc-list-item__text">Import/Export</span>
+        </a>
+        <a class="mdc-list-item" href="#">
+          <i class="material-icons mdc-list-item__graphic" aria-hidden="true">clear_all</i>
+          <span class="mdc-list-item__text">Clear</span>
+        </a>
+        <a class="mdc-list-item" href="#">
+          <i class="material-icons mdc-list-item__graphic" aria-hidden="true">help</i>
+          <span class="mdc-list-item__text">About</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+  <div class="mdc-drawer-app-content mdc-top-app-bar--fixed-adjust">
+    <main class="main-content" id="main-content">
+      <button class="mdc-fab" aria-label="Favorite">
+        <div class="mdc-fab__ripple"></div>
+        <span class="mdc-fab__icon material-icons">add</span>
+      </button>
+      <div class="mdc-tab-bar" role="tablist">
+        <div class="mdc-tab-scroller">
+          <div class="mdc-tab-scroller__scroll-area">
+            <div class="mdc-tab-scroller__scroll-content">
+              <button class="mdc-tab mdc-tab--active" role="tab" aria-selected="true" tabindex="0">
+                <span class="mdc-tab__content">
+                  <span class="mdc-tab__icon material-icons" aria-hidden="true">title</span>
+                  <span class="mdc-tab__text-label">Title</span>
+                </span>
+                <span class="mdc-tab-indicator mdc-tab-indicator--active">
+                  <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                </span>
+                <span class="mdc-tab__ripple"></span>
+              </button>
+            </div>
+            <div class="mdc-tab-scroller__scroll-content">
+              <button class="mdc-tab mdc-tab--active" role="tab" aria-selected="true" tabindex="0">
+                <span class="mdc-tab__content">
+                  <span class="mdc-tab__icon material-icons" aria-hidden="true">text_fields</span>
+                  <span class="mdc-tab__text-label">Text Field</span>
+                </span>
+                <span class="mdc-tab-indicator mdc-tab-indicator--active">
+                  <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                </span>
+                <span class="mdc-tab__ripple"></span>
+              </button>
+            </div>
+            <div class="mdc-tab-scroller__scroll-content">
+              <button class="mdc-tab mdc-tab--active" role="tab" aria-selected="true" tabindex="0">
+                <span class="mdc-tab__content">
+                  <span class="mdc-tab__icon material-icons" aria-hidden="true">search</span>
+                  <span class="mdc-tab__text-label">Search</span>
+                </span>
+                <span class="mdc-tab-indicator mdc-tab-indicator--active">
+                  <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                </span>
+                <span class="mdc-tab__ripple"></span>
+              </button>
+            </div>
+            <div class="mdc-tab-scroller__scroll-content">
+              <button class="mdc-tab mdc-tab--active" role="tab" aria-selected="true" tabindex="0">
+                <span class="mdc-tab__content">
+                  <span class="mdc-tab__icon material-icons" aria-hidden="true">description</span>
+                  <span class="mdc-tab__text-label">Describe</span>
+                </span>
+                <span class="mdc-tab-indicator mdc-tab-indicator--active">
+                  <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                </span>
+                <span class="mdc-tab__ripple"></span>
+              </button>
+            </div>
+            <div class="mdc-tab-scroller__scroll-content">
+              <button class="mdc-tab mdc-tab--active" role="tab" aria-selected="true" tabindex="0">
+                <span class="mdc-tab__content">
+                  <span class="mdc-tab__icon material-icons" aria-hidden="true">bar_chart</span>
+                  <span class="mdc-tab__text-label">Charts</span>
+                </span>
+                <span class="mdc-tab-indicator mdc-tab-indicator--active">
+                  <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                </span>
+                <span class="mdc-tab__ripple"></span>
+              </button>
+            </div>
           </div>
         </div>
-      </aside>
-      <div class="mdc-drawer-app-content mdc-top-app-bar--fixed-adjust">
-        <main class="main-content" id="main-content">
-   	<p>ODDOL</p>
-        </main>
-      </main>
-      <script src="bundle.js"></script>
-    </body>
+      </div>
+
+      <label class="mdc-text-field mdc-text-field--fullwidth mdc-text-field--textarea">
+        <textarea class="mdc-text-field__input" aria-labelledby="my-label-id" rows="8" cols="40"></textarea>
+        <div class="mdc-notched-outline">
+          <div class="mdc-notched-outline__leading"></div>
+          <div class="mdc-notched-outline__notch">
+            <label class="mdc-floating-label" id="my-label-id">Textarea Label</label>
+          </div>
+          <div class="mdc-notched-outline__trailing"></div>
+        </div>
+      </label>
+    </main>
+
+  </div>
+  <script src="bundle.js"></script>
+</body>
+
 </html>

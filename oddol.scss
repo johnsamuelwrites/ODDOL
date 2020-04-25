@@ -2,6 +2,13 @@
 @use "@material/icon-button/mdc-icon-button";
 @use "@material/drawer/mdc-drawer";
 @use "@material/list/mdc-list";
+@use "@material/textfield/mdc-text-field";
+@use "@material/fab/mdc-fab";
+@use "@material/chips/mdc-chips";
+@use "@material/tab-bar/mdc-tab-bar";
+@use "@material/tab-scroller/mdc-tab-scroller";
+@use "@material/tab-indicator/mdc-tab-indicator";
+@use "@material/tab/mdc-tab";
 
 .mdc-top-app-bar {
    background-color: #00c853;
@@ -9,6 +16,22 @@
 
 .mdc-drawer .mdc-list-item--activated .mdc-list-item__graphic {
   color: #00c853;
+}
+
+.mdc-tab--active .mdc-tab__icon, .mdc-tab--active .mdc-tab__text-label{
+  color: #00c853;
+}
+
+.mdc-fab {
+  background-color: #009624;
+}
+.mdc-tab-indicator .mdc-tab-indicator__content--underline, 
+.mdc-tab__ripple::before, .mdc-tab__ripple::after{
+  background-color:#c81400;
+}
+
+.mdc-tab__ripple::after{
+  background-color:#c81400;
 }
 
 .mdc-drawer .mdc-list-item--activated {
@@ -28,7 +51,6 @@
 .app-bar {
   position: absolute;
 }
-
 
 // only apply this style if below top app bar
 .mdc-top-app-bar {
