@@ -1,0 +1,29 @@
+{
+  "name": "oddol",
+  "version": "0.1.0",
+  "description": "Open Data Driven Online Learning",
+  "main": "index.html",
+  "scripts": {
+    "test": "webpack-dev-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnsamuelwrites/ODDOL.git"
+  },
+  "keywords": [
+    "Open-Data",
+    "Online-Learning",
+    "Education"
+  ],
+  "author": "John Samuel",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/johnsamuelwrites/ODDOL/issues"
+  },
+  "homepage": "https://github.com/johnsamuelwrites/ODDOL/README.md",
+  "devDependencies": {
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
+  }
+}
