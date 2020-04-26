@@ -21,3 +21,6 @@ Finally, there must be a possibility to contribute and curate new datasets obtai
 * Contribute
 
 It helps the users search the datasets based on the license, help them analyze their existing purpose and use, use them for their projects, describe their use in their projects as well as help them contribute in the form of curation of new experiment datasets and results.
+
+## Architecture
+The architecture of the platform is detailed [here](design/architecture.md). 
