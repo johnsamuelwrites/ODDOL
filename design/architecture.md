@@ -28,6 +28,12 @@ Following are some of the major information that can be used to link the two:
 * Purpose behind use of dataset in the published document
 * Works cited by the datasets (including other datasets)
 
+### Data models 
+Open models for the key concepts are also available on Wikidata
+* [dataset](https://www.wikidata.org/wiki/EntitySchema:E207)
+* [SPARQL endpoint](https://www.wikidata.org/wiki/EntitySchema:E208)
+* [API endpoint](https://www.wikidata.org/wiki/EntitySchema:E209)
+
 ### How to obtain these information
 There are two ways by which these information can be obtained
 * Curation by community members
