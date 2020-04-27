@@ -37,8 +37,12 @@
     "webpack-dev-server": "^3.10.3"
   },
   "dependencies": {
+    "@material/checkbox": "^6.0.0",
     "@material/chips": "^6.0.0",
+    "@material/drawer": "^6.0.0",
+    "@material/elevation": "^6.0.0",
     "@material/fab": "^6.0.0",
+    "@material/form-field": "^6.0.0",
     "@material/list": "^6.0.0",
     "@material/menu": "^6.0.0",
     "@material/menu-surface": "^6.0.0",
