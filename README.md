@@ -24,3 +24,6 @@ It helps the users search the datasets based on the license, help them analyze t
 
 ## Architecture
 The architecture of the platform is detailed [here](design/architecture.md). 
+
+## Demonstration
+ODDOL is available [https://tools.wmflabs.org/ODDOL](https://tools.wmflabs.org/ODDOL). 
