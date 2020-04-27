@@ -9,6 +9,8 @@
 @use "@material/tab-scroller/mdc-tab-scroller";
 @use "@material/tab-indicator/mdc-tab-indicator";
 @use "@material/tab/mdc-tab";
+@use "@material/form-field/mdc-form-field";
+@use "@material/checkbox/mdc-checkbox";
 
 .mdc-top-app-bar {
    background-color: #00c853;
@@ -29,7 +31,7 @@
 .mdc-tab__ripple::before, .mdc-tab__ripple::after{
   background-color:#c81400;
 }
-
+  
 .mdc-tab__ripple::after{
   background-color:#c81400;
 }
