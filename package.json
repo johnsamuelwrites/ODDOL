@@ -43,12 +43,15 @@
     "@material/elevation": "^6.0.0",
     "@material/fab": "^6.0.0",
     "@material/form-field": "^6.0.0",
+    "@material/icon-button": "^6.0.0",
     "@material/list": "^6.0.0",
     "@material/menu": "^6.0.0",
     "@material/menu-surface": "^6.0.0",
+    "@material/tab-bar": "^6.0.0",
     "@material/tab-scroller": "^6.0.0",
     "@material/textfield": "^6.0.0",
     "@material/theme": "^6.0.0",
+    "@material/top-app-bar": "^6.0.0",
     "wikidata-sdk": "^7.4.1"
   }
 }
