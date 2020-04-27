@@ -2,7 +2,6 @@ import {MDCTopAppBar} from '@material/top-app-bar';
 import {MDCDrawer} from "@material/drawer";
 import {MDCTextField} from '@material/textfield';
 import {MDCRipple} from '@material/ripple';
-import {MDCChipSet} from '@material/chips';
 import {MDCTabScroller} from '@material/tab-scroller';
 
 
@@ -31,12 +30,7 @@ function searchTerm(search) {
     .then(json => console.log(json));*/
 }
 
-const chipSetEl = document.querySelector('.mdc-chip-set');
-const chipSet = new MDCChipSet(chipSetEl);
-
 
 const fabRipple = new MDCRipple(document.querySelector('.mdc-fab'));
-
-const textField = new MDCTextField(document.querySelector('.mdc-text-field'));
 
 const tabScroller = new MDCTabScroller(document.querySelector('.mdc-tab-scroller'));
