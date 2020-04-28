@@ -4,7 +4,7 @@
   "description": "Open Data Driven Online Learning",
   "main": "index.html",
   "scripts": {
-    "build": "webpack -p",
+    "build": "webpack -p --mode=production",
     "test": "webpack-dev-server"
   },
   "repository": {
