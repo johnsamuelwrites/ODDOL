@@ -1,9 +1,13 @@
 const autoprefixer = require('autoprefixer');
+const path = require('path');
+const BUILD_DIR = path.resolve(__dirname, './');
 
 module.exports = {
   entry: ['./oddol.scss', './oddol.js'],
   output: {
+    path: BUILD_DIR,
     filename: 'bundle.js',
+    publicPath: '/'
   },
   module: {
     rules: [
@@ -58,4 +62,3 @@ module.exports = {
     ],
   },
 };
-
