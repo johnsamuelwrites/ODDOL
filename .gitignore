@@ -1,2 +1,39 @@
+# Dependencies
 node_modules/
 package-lock.json
+
+# Build outputs
+build/
+dist/
+.svelte-kit/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test outputs
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.local
