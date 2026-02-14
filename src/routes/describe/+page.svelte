@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
+
 	let title = '';
 	let description = '';
 	let methodology = '';
@@ -6,6 +9,42 @@
 	let newSource = '';
 	let generatedBy = 'ODDOL User';
 	let usedQuery = '';
+
+	const DESCRIBE_DRAFT_KEY = 'oddol:describe-draft';
+
+	interface DescribeDraft {
+		title?: string;
+		description?: string;
+		methodology?: string;
+		dataSources?: string[];
+		generatedBy?: string;
+		usedQuery?: string;
+	}
+
+	onMount(() => {
+		if (!browser) return;
+
+		const rawDraft = sessionStorage.getItem(DESCRIBE_DRAFT_KEY);
+		if (!rawDraft) return;
+		sessionStorage.removeItem(DESCRIBE_DRAFT_KEY);
+
+		try {
+			const draft = JSON.parse(rawDraft) as DescribeDraft;
+
+			if (!title && draft.title) title = draft.title;
+			if (!description && draft.description) description = draft.description;
+			if (!methodology && draft.methodology) methodology = draft.methodology;
+			if (!usedQuery && draft.usedQuery) usedQuery = draft.usedQuery;
+			if ((!generatedBy || generatedBy === 'ODDOL User') && draft.generatedBy) {
+				generatedBy = draft.generatedBy;
+			}
+			if (Array.isArray(draft.dataSources) && draft.dataSources.length > 0) {
+				dataSources = Array.from(new Set([...dataSources, ...draft.dataSources]));
+			}
+		} catch {
+			// Ignore invalid draft payloads.
+		}
+	});
 
 	function addDataSource() {
 		if (newSource.trim() && !dataSources.includes(newSource.trim())) {
@@ -186,7 +225,7 @@ ${generatedBy}
 				placeholder="Describe your analysis goals, findings, and conclusions..."
 				rows="4"
 				class="input"
-			/>
+			></textarea>
 		</div>
 
 		<!-- Methodology -->
@@ -200,16 +239,17 @@ ${generatedBy}
 				placeholder="Describe the methods and techniques used in your analysis..."
 				rows="4"
 				class="input"
-			/>
+			></textarea>
 		</div>
 
 		<!-- Data Sources -->
 		<div class="card p-6">
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label for="data-source-input" class="block text-sm font-medium text-gray-700 mb-2">
 				Data Sources
 			</label>
 			<div class="flex gap-2 mb-4">
 				<input
+					id="data-source-input"
 					type="text"
 					bind:value={newSource}
 					placeholder="Enter DOI, URL, or dataset name"
@@ -225,10 +265,11 @@ ${generatedBy}
 					{#each dataSources as source, index}
 						<li class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
 							<span class="text-sm text-gray-700">{source}</span>
-							<button
-								on:click={() => removeDataSource(index)}
-								class="text-gray-400 hover:text-red-500"
-							>
+								<button
+									on:click={() => removeDataSource(index)}
+									aria-label="Remove data source"
+									class="text-gray-400 hover:text-red-500"
+								>
 								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 								</svg>

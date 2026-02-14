@@ -2,6 +2,7 @@
 	import type { UnifiedEntity } from '$lib/types';
 
 	export let entity: UnifiedEntity;
+	export let searchQuery = '';
 
 	function getTypeIcon(type: string): string {
 		switch (type) {
@@ -52,6 +53,27 @@
 		} catch {
 			return dateStr;
 		}
+	}
+
+	function getAnalyzeHref(): string {
+		const params = new URLSearchParams();
+		params.set('id', entity.id);
+
+		if (searchQuery.trim()) {
+			params.set('q', searchQuery.trim());
+		}
+
+		params.set('title', entity.title);
+		if (entity.identifiers.doi) {
+			params.set('doi', entity.identifiers.doi);
+		}
+
+		const sourceIds = entity.sources.map((s) => s.sourceId).join(',');
+		if (sourceIds) {
+			params.set('sources', sourceIds);
+		}
+
+		return `/analyze?${params.toString()}`;
 	}
 </script>
 
@@ -131,7 +153,7 @@
 	<!-- Actions -->
 	<div class="flex gap-2 mt-4 pt-4 border-t border-gray-100">
 		<a
-			href="/analyze?id={encodeURIComponent(entity.id)}"
+			href={getAnalyzeHref()}
 			class="btn btn-primary text-sm py-1 px-3"
 		>
 			Analyze

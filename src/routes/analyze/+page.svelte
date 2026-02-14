@@ -1,24 +1,48 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { analysisStore, currentSchema, dataPreview, isAnalyzing, analysisError } from '$lib/stores/analysis';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { analysisStore, currentSchema, isAnalyzing, analysisError } from '$lib/stores/analysis';
 	import { getVisualizationService } from '$lib/visualization';
 	import { getFederationEngine } from '$lib/federation';
 	import type { ChartConfig, ChartType, UnifiedEntity } from '$lib/types';
 
+	type QueryResultView = { columns: string[]; rows: unknown[][] };
+
+	interface DescribeDraft {
+		title: string;
+		description: string;
+		methodology: string;
+		dataSources: string[];
+		generatedBy: string;
+		usedQuery: string;
+	}
+
 	let sqlQuery = '';
-	let queryResult: { columns: string[]; rows: unknown[][] } | null = null;
+	let queryResult: QueryResultView | null = null;
 	let chartContainer: HTMLDivElement;
 	let selectedChartType: ChartType = 'bar';
 	let chartXColumn = '';
 	let chartYColumn = '';
+	let dataUrl = '';
+	let tableNameInput = 'imported_data';
+	let sqlValidationMessage: string | null = null;
+	let queryHistory: string[] = [];
+	let activeEntity: UnifiedEntity | null = null;
+	let searchContext = '';
+
+	const QUERY_HISTORY_KEY = 'oddol:sql-history';
+	const DESCRIBE_DRAFT_KEY = 'oddol:describe-draft';
 
 	const visualizationService = getVisualizationService();
 	const federationEngine = getFederationEngine();
 
 	onMount(async () => {
 		await analysisStore.initialize();
+		loadQueryHistory();
 
+		searchContext = $page.url.searchParams.get('q') || '';
 		await loadEntityFromQueryParam();
 	});
 
@@ -35,18 +59,19 @@
 				return;
 			}
 
+			activeEntity = entity;
+			analysisStore.setSelectedEntity(entity);
+
 			const tableName = 'entity_data';
 			await analysisStore.loadData([entityToRow(entity)], tableName);
 			sqlQuery = `SELECT * FROM ${tableName}`;
 			const result = await analysisStore.executeQuery(sqlQuery);
 			if (result) {
 				queryResult = result;
+				addQueryToHistory(sqlQuery);
 			}
 
-			if ($currentSchema?.columns.length) {
-				chartXColumn = $currentSchema.columns[0].name;
-				chartYColumn = $currentSchema.columns[1]?.name || '';
-			}
+			setDefaultChartColumns();
 		} catch (error) {
 			analysisStore.setError(
 				error instanceof Error ? error.message : 'Failed to load entity for analysis'
@@ -76,6 +101,177 @@
 		};
 	}
 
+	function loadQueryHistory() {
+		if (!browser) return;
+
+		try {
+			const raw = localStorage.getItem(QUERY_HISTORY_KEY);
+			if (!raw) return;
+			const parsed = JSON.parse(raw);
+			if (Array.isArray(parsed)) {
+				queryHistory = parsed.filter((q): q is string => typeof q === 'string');
+			}
+		} catch {
+			queryHistory = [];
+		}
+	}
+
+	function addQueryToHistory(query: string) {
+		const normalized = query.trim();
+		if (!normalized || !browser) return;
+
+		const withoutDup = queryHistory.filter((item) => item !== normalized);
+		queryHistory = [normalized, ...withoutDup].slice(0, 10);
+		localStorage.setItem(QUERY_HISTORY_KEY, JSON.stringify(queryHistory));
+	}
+
+	function setDefaultChartColumns() {
+		if ($currentSchema?.columns.length) {
+			chartXColumn = $currentSchema.columns[0].name;
+			chartYColumn = $currentSchema.columns[1]?.name || '';
+		}
+	}
+
+	function toSafeTableName(value: string): string {
+		const cleaned = value.trim().replace(/[^\w]/g, '_');
+		return cleaned || 'imported_data';
+	}
+
+	function validateSql(sql: string): string | null {
+		const normalized = sql.trim();
+		if (!normalized) return 'SQL query is empty.';
+
+		const firstToken = normalized.split(/\s+/)[0]?.toUpperCase();
+		const allowedFirstTokens = ['SELECT', 'WITH', 'SHOW', 'DESCRIBE', 'PRAGMA'];
+		if (!firstToken || !allowedFirstTokens.includes(firstToken)) {
+			return `Query starts with "${firstToken || 'UNKNOWN'}". Prefer read-only statements (SELECT/WITH/SHOW).`;
+		}
+
+		return null;
+	}
+
+	function parseCsv(text: string): Record<string, unknown>[] {
+		const lines = text
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter((line) => line.length > 0);
+		if (lines.length < 2) return [];
+
+		const headers = parseCsvLine(lines[0]);
+		return lines.slice(1).map((line) => {
+			const values = parseCsvLine(line);
+			const row: Record<string, unknown> = {};
+			for (let i = 0; i < headers.length; i++) {
+				const raw = values[i] ?? '';
+				const numeric = Number(raw);
+				row[headers[i]] =
+					raw === '' ? null : Number.isNaN(numeric) ? raw : numeric;
+			}
+			return row;
+		});
+	}
+
+	function parseCsvLine(line: string): string[] {
+		const result: string[] = [];
+		let current = '';
+		let inQuotes = false;
+
+		for (let i = 0; i < line.length; i++) {
+			const char = line[i];
+			const next = line[i + 1];
+
+			if (char === '"' && inQuotes && next === '"') {
+				current += '"';
+				i++;
+				continue;
+			}
+
+			if (char === '"') {
+				inQuotes = !inQuotes;
+				continue;
+			}
+
+			if (char === ',' && !inQuotes) {
+				result.push(current);
+				current = '';
+				continue;
+			}
+
+			current += char;
+		}
+
+		result.push(current);
+		return result;
+	}
+
+	function extractTableNameFromFile(fileName: string): string {
+		const base = fileName.replace(/\.[^.]+$/, '');
+		return toSafeTableName(base);
+	}
+
+	async function handleFileUpload(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		try {
+			analysisStore.setError(null);
+			const content = await file.text();
+			const lowerName = file.name.toLowerCase();
+			let rows: Record<string, unknown>[] = [];
+
+			if (lowerName.endsWith('.json')) {
+				const parsed = JSON.parse(content);
+				if (Array.isArray(parsed)) {
+					rows = parsed as Record<string, unknown>[];
+				} else if (parsed && typeof parsed === 'object') {
+					rows = [parsed as Record<string, unknown>];
+				} else {
+					throw new Error('JSON file must contain an object or array of objects.');
+				}
+			} else if (lowerName.endsWith('.csv')) {
+				rows = parseCsv(content);
+			} else {
+				throw new Error('Only CSV and JSON files are supported.');
+			}
+
+			if (rows.length === 0) {
+				throw new Error('No rows found in uploaded file.');
+			}
+
+			const tableName = extractTableNameFromFile(file.name);
+			await analysisStore.loadData(rows, tableName);
+			sqlQuery = `SELECT * FROM ${tableName}`;
+			const result = await analysisStore.executeQuery(sqlQuery);
+			if (result) {
+				queryResult = result;
+				addQueryToHistory(sqlQuery);
+			}
+			setDefaultChartColumns();
+		} catch (error) {
+			analysisStore.setError(
+				error instanceof Error ? error.message : 'Failed to parse and load file'
+			);
+		} finally {
+			input.value = '';
+		}
+	}
+
+	async function handleLoadFromUrl() {
+		const trimmedUrl = dataUrl.trim();
+		if (!trimmedUrl) return;
+
+		const tableName = toSafeTableName(tableNameInput);
+		await analysisStore.loadFromUrl(trimmedUrl, tableName);
+		sqlQuery = `SELECT * FROM ${tableName}`;
+		const result = await analysisStore.executeQuery(sqlQuery);
+		if (result) {
+			queryResult = result;
+			addQueryToHistory(sqlQuery);
+		}
+		setDefaultChartColumns();
+	}
+
 	async function handleLoadSampleData() {
 		const sampleData = [
 			{ year: 2020, temperature: 14.9, co2: 414, region: 'Global' },
@@ -92,19 +288,29 @@
 
 		await analysisStore.loadData(sampleData, 'climate_data');
 		sqlQuery = 'SELECT * FROM climate_data';
-
-		if ($currentSchema?.columns.length) {
-			chartXColumn = $currentSchema.columns[0].name;
-			chartYColumn = $currentSchema.columns[1]?.name || '';
+		const result = await analysisStore.executeQuery(sqlQuery);
+		if (result) {
+			queryResult = result;
+			addQueryToHistory(sqlQuery);
 		}
+		setDefaultChartColumns();
 	}
 
 	async function handleExecuteQuery() {
 		if (!sqlQuery.trim()) return;
 
+		sqlValidationMessage = validateSql(sqlQuery);
 		const result = await analysisStore.executeQuery(sqlQuery);
 		if (result) {
 			queryResult = result;
+			addQueryToHistory(sqlQuery);
+		}
+	}
+
+	function handleSqlKeydown(event: KeyboardEvent) {
+		if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+			event.preventDefault();
+			void handleExecuteQuery();
 		}
 	}
 
@@ -150,6 +356,44 @@
 		a.click();
 		URL.revokeObjectURL(url);
 	}
+
+	async function handleGoToDescribe() {
+		if (!browser) return;
+
+		const sourceEntries = activeEntity?.sources.map((s) => `${s.sourceId}: ${s.sourceUrl}`) || [];
+		const sourceParam = $page.url.searchParams.get('sources');
+		if (!activeEntity && sourceParam) {
+			for (const sourceId of sourceParam.split(',').map((s) => s.trim()).filter(Boolean)) {
+				sourceEntries.push(sourceId);
+			}
+		}
+		if (activeEntity?.url) {
+			sourceEntries.push(activeEntity.url);
+		}
+		const doiParam = $page.url.searchParams.get('doi');
+		if (!activeEntity && doiParam) {
+			sourceEntries.push(`doi:${doiParam}`);
+		}
+		const titleParam = $page.url.searchParams.get('title');
+
+		const describeDraft: DescribeDraft = {
+			title: activeEntity
+				? `Analysis of ${activeEntity.title}`
+				: titleParam
+					? `Analysis of ${titleParam}`
+					: 'Untitled analysis',
+			description: searchContext
+				? `Started from search query: "${searchContext}".`
+				: 'Analysis produced in ODDOL Analyze.',
+			methodology: 'SQL analysis executed in DuckDB-WASM in browser.',
+			dataSources: sourceEntries,
+			generatedBy: 'ODDOL User',
+			usedQuery: sqlQuery
+		};
+
+		sessionStorage.setItem(DESCRIBE_DRAFT_KEY, JSON.stringify(describeDraft));
+		await goto('/describe?from=analyze');
+	}
 </script>
 
 <svelte:head>
@@ -157,11 +401,16 @@
 </svelte:head>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-	<div class="mb-8">
-		<h1 class="text-3xl font-bold text-gray-900 mb-2">Analyze Data</h1>
-		<p class="text-gray-600">
-			Process data in-browser with SQL using DuckDB-WASM. No data leaves your browser.
-		</p>
+	<div class="mb-8 flex flex-wrap items-center justify-between gap-3">
+		<div>
+			<h1 class="text-3xl font-bold text-gray-900 mb-2">Analyze Data</h1>
+			<p class="text-gray-600">
+				Process data in-browser with SQL using DuckDB-WASM. No data leaves your browser.
+			</p>
+		</div>
+		<button on:click={handleGoToDescribe} class="btn btn-outline">
+			Send to Describe
+		</button>
 	</div>
 
 	<!-- Error Display -->
@@ -182,10 +431,28 @@
 						Load Sample Data
 					</button>
 					<label class="btn btn-outline text-sm cursor-pointer">
-						<input type="file" accept=".csv,.json" class="hidden" />
+						<input type="file" accept=".csv,.json" class="hidden" on:change={handleFileUpload} />
 						Upload File
 					</label>
-					<button class="btn btn-outline text-sm">
+				</div>
+				<div class="mt-4 grid sm:grid-cols-[1fr_auto_auto] gap-2">
+					<input
+						type="url"
+						bind:value={dataUrl}
+						placeholder="https://example.org/data.csv"
+						class="input"
+					/>
+					<input
+						type="text"
+						bind:value={tableNameInput}
+						placeholder="table_name"
+						class="input"
+					/>
+					<button
+						on:click={handleLoadFromUrl}
+						disabled={$isAnalyzing || !dataUrl.trim()}
+						class="btn btn-outline text-sm"
+					>
 						Load from URL
 					</button>
 				</div>
@@ -230,14 +497,20 @@
 				<div class="sql-console">
 					<textarea
 						bind:value={sqlQuery}
+						on:keydown={handleSqlKeydown}
 						placeholder="SELECT * FROM table_name LIMIT 100"
 						rows="4"
 						class="w-full bg-transparent text-green-400 font-mono focus:outline-none"
-					/>
+					></textarea>
 				</div>
 				<div class="mt-2 text-xs text-gray-500">
-					Press Ctrl+Enter to run query
+					Press Ctrl+Enter (or Cmd+Enter) to run query
 				</div>
+				{#if sqlValidationMessage}
+					<div class="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+						{sqlValidationMessage}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Query Results -->
@@ -292,8 +565,8 @@
 				<div class="space-y-4">
 					<!-- Chart Type -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Chart Type</label>
-						<select bind:value={selectedChartType} class="input">
+						<label for="chart-type" class="block text-sm font-medium text-gray-700 mb-1">Chart Type</label>
+						<select id="chart-type" bind:value={selectedChartType} class="input">
 							<option value="line">Line Chart</option>
 							<option value="bar">Bar Chart</option>
 							<option value="scatter">Scatter Plot</option>
@@ -304,8 +577,8 @@
 
 					<!-- X Column -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">X Axis</label>
-						<select bind:value={chartXColumn} class="input">
+						<label for="chart-x" class="block text-sm font-medium text-gray-700 mb-1">X Axis</label>
+						<select id="chart-x" bind:value={chartXColumn} class="input">
 							<option value="">Select column</option>
 							{#if $currentSchema}
 								{#each $currentSchema.columns as column}
@@ -317,8 +590,8 @@
 
 					<!-- Y Column -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Y Axis</label>
-						<select bind:value={chartYColumn} class="input">
+						<label for="chart-y" class="block text-sm font-medium text-gray-700 mb-1">Y Axis</label>
+						<select id="chart-y" bind:value={chartYColumn} class="input">
 							<option value="">Select column</option>
 							{#if $currentSchema}
 								{#each $currentSchema.columns as column}
@@ -348,6 +621,25 @@
 						<p class="text-gray-400 text-sm">Configure chart options and click "Create Chart"</p>
 					{/if}
 				</div>
+			</div>
+
+			<!-- Query History -->
+			<div class="card p-4">
+				<h2 class="font-semibold text-gray-900 mb-4">Recent Queries</h2>
+				{#if queryHistory.length === 0}
+					<p class="text-sm text-gray-500">No query history yet.</p>
+				{:else}
+					<div class="space-y-2">
+						{#each queryHistory as query}
+							<button
+								on:click={() => (sqlQuery = query)}
+								class="btn btn-outline w-full text-sm text-left"
+							>
+								{query.length > 64 ? `${query.slice(0, 64)}...` : query}
+							</button>
+						{/each}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Quick Templates -->
