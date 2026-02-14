@@ -107,6 +107,9 @@ ODDOL 2.0 follows a **no server-side storage, real-time query** architecture:
 
 Note: Browser-local storage is used for short-lived query cache (IndexedDB, 15-minute TTL), recent SQL history (localStorage), and temporary describe drafts (sessionStorage).
 
+Detailed implementation documentation: [`design/architecture.md`](design/architecture.md)
+Conceptual motivation and vision: [`design/problem-overview.md`](design/problem-overview.md)
+
 ## Project Structure
 
 ```
