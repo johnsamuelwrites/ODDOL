@@ -1,29 +1,165 @@
-# ODDOL
+# ODDOL 2.0
+
 **Open Data Driven Online Learning**
 
-ODDOL is an open platform that enables online learners to make use of open datasets for their projects and assignments. Users can search open datasets, use and analyze them for their projects, describe their results, and optionally contribute new datasets from their results.
+ODDOL is a real-time federated platform that enables online learners to discover, analyze, and contribute open datasets. All queries are executed in real-time against multiple open data sources - no data is stored or downloaded in bulk.
 
-## Problem
-Data is being released with open licenses around the world. The use of open data is the founding block for transparent data-driven decisions. However, its usage for online learning is quite limited. Most of our current online learning approaches make use of some pre-fabricated data. They may help explain some topics, but the students and online learners learn very little about the real social and economic potential impacts from these prepared datasets. Therefore, online learning must be driven by open datasets.
+## Features
 
-Secondly, even if some open datasets are used by a small group of researchers, their usage may not be known to other online learners. It is essential to know the purpose, usage, and the results obtained by the data analysis. Not only will this help the online instructors to prepare and improve their courses with interesting real-life use cases but also help other researchers to verify as well as improve already improved research works. These data sources need to be made easily findable. Therefore they need to be curated considering the choice of licenses, purpose, use, etc.
+### Search
+- **Federated Search**: Query Wikidata, OpenAlex, Zenodo, and DataCite simultaneously
+- **Real-time Results**: Direct API queries to source endpoints
+- **Entity Resolution**: Automatic deduplication across sources using DOI, ORCID, and ROR
+- **Visual SPARQL Builder**: Construct Wikidata queries without writing SPARQL
 
-Finally, there must be a possibility to contribute and curate new datasets obtained from the data analysis results as well as new experimental results.
+### Analyze
+- **In-Browser SQL**: Process data with DuckDB-WASM (no server required)
+- **Streaming Data**: Load data progressively, never download entire datasets
+- **Statistical Templates**: Pre-built queries for common analyses
+- **Interactive Visualizations**: Charts powered by Observable Plot
 
-## Solution: ODDOL
+### Describe
+- **Provenance Tracking**: Full lineage from source to results
+- **Multi-format Export**: Markdown, JSON-LD, BibTeX
+- **Citation Building**: Generate proper citations for datasets
 
-<img src="images/oddol.svg" style="align:center" alt="drawing" width="500"/>
+### Contribute
+- **Wikidata Integration**: Add datasets directly to Wikidata
+- **Schema Validation**: Validate against EntitySchema:E207
+- **QuickStatements Generation**: Ready-to-submit contributions
 
-**ODDOL** revolves around four principles for making the best use of open data.
-* Search
-* Analyze
-* Describe
-* Contribute
+## Technology Stack
 
-It helps the users search the datasets based on the license, help them analyze their existing purpose and use, use them for their projects, describe their use in their projects as well as help them contribute in the form of curation of new experiment datasets and results.
+| Component | Technology |
+|-----------|------------|
+| Framework | SvelteKit 2.x |
+| Styling | Tailwind CSS |
+| SQL Engine | DuckDB-WASM |
+| Visualization | Observable Plot |
+| State | Svelte stores + TanStack Query |
+| Cache | IndexedDB (15-minute TTL) |
+
+## Data Sources
+
+| Source | Type | Coverage |
+|--------|------|----------|
+| **Wikidata** | SPARQL | 100M+ entities |
+| **OpenAlex** | REST | 250M+ scholarly works |
+| **Zenodo** | REST | 3M+ research outputs |
+| **DataCite** | REST | 50M+ DOI records |
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- npm or pnpm
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/johnsamuelwrites/ODDOL.git
+cd ODDOL
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### Build for Production
+
+```bash
+npm run build
+npm run preview
+```
 
 ## Architecture
-The architecture of the platform is detailed [here](design/architecture.md). 
 
-## Demonstration
-ODDOL is available [https://tools.wmflabs.org/ODDOL](https://tools.wmflabs.org/ODDOL). 
+ODDOL 2.0 follows a **zero-storage, real-time query** architecture:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ODDOL 2.0 Client                          │
+│                  (SvelteKit Static SPA)                      │
+├─────────────────────────────────────────────────────────────┤
+│  Query Federation Engine → Rate Limiter → Entity Resolver   │
+├─────────────────────────────────────────────────────────────┤
+│  DuckDB-WASM (In-Browser) │ Observable Plot │ IndexedDB    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              Direct HTTPS API Calls (No Backend)
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│  Wikidata │ OpenAlex │ Zenodo │ DataCite │ OpenCitations   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Principles
+
+1. **No Bulk Storage**: Data flows through, never persists
+2. **Real-time Queries**: Live queries to source APIs
+3. **Browser Processing**: All computation in WebAssembly
+4. **Cursor Pagination**: Stream data in small chunks
+5. **Standards-Based**: SPARQL, DCAT, PROV-O
+
+See [design/ODDOL-2.0-IMPLEMENTATION-PLAN.md](design/ODDOL-2.0-IMPLEMENTATION-PLAN.md) for detailed architecture documentation.
+
+## Project Structure
+
+```
+src/
+├── routes/           # SvelteKit pages
+│   ├── +page.svelte         # Search
+│   ├── analyze/             # Data analysis
+│   ├── describe/            # Documentation
+│   └── contribute/          # Wikidata contribution
+├── lib/
+│   ├── sources/      # Data source clients
+│   │   ├── wikidata.ts
+│   │   ├── openalex.ts
+│   │   ├── zenodo.ts
+│   │   └── datacite.ts
+│   ├── federation/   # Query routing & merging
+│   ├── analysis/     # DuckDB engine
+│   ├── visualization/# Observable Plot
+│   ├── sparql/       # SPARQL query builder
+│   ├── cache/        # IndexedDB caching
+│   └── stores/       # Svelte state management
+```
+
+## Privacy & Security
+
+- **No Tracking**: No analytics, cookies, or fingerprinting
+- **No Server Storage**: All data stays in your browser
+- **Transparent Queries**: See exactly what APIs are called
+- **Short-lived Cache**: Query results expire in 15 minutes
+
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting a PR.
+
+### Development Commands
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run check        # Type-check the project
+npm run test         # Run tests
+npm run lint         # Lint code
+```
+
+## License
+
+GPL-3.0-or-later
+
+## Acknowledgments
+
+- [Wikidata](https://www.wikidata.org) - Free knowledge base
+- [OpenAlex](https://openalex.org) - Open scholarly metadata
+- [Zenodo](https://zenodo.org) - Open research repository
+- [DataCite](https://datacite.org) - DOI registration agency
+- [DuckDB](https://duckdb.org) - In-process analytics database
+- [Observable Plot](https://observablehq.com/plot) - Grammar of graphics
