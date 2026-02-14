@@ -50,7 +50,7 @@
 		</h1>
 		<p class="text-lg text-gray-600 max-w-2xl mx-auto">
 			Search, analyze, describe, and contribute to open datasets from Wikidata, OpenAlex, Zenodo, and more.
-			All queries are real-time - no data is stored.
+			All queries are real-time with no ODDOL server storage. Query cache is kept locally in your browser for 15 minutes.
 		</p>
 	</div>
 

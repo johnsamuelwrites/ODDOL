@@ -112,7 +112,7 @@
 				</div>
 			</div>
 			<div class="mt-6 pt-6 border-t border-gray-700 text-center text-xs">
-				<p>Licensed under GPL-3.0 | No data is stored - all queries are real-time</p>
+				<p>Licensed under GPL-3.0 | No ODDOL server-side storage | Real-time federated queries</p>
 			</div>
 		</div>
 	</footer>

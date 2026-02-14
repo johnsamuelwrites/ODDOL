@@ -2,7 +2,7 @@
 
 **Open Data Driven Online Learning**
 
-ODDOL is a real-time federated platform that enables online learners to discover, analyze, and contribute open datasets. All queries are executed in real-time against multiple open data sources - no data is stored or downloaded in bulk.
+ODDOL is a real-time federated platform that enables online learners to discover, analyze, and contribute open datasets. Queries are executed in real-time against multiple open data sources, with no ODDOL server-side data storage.
 
 ## Features
 
@@ -78,7 +78,7 @@ npm run preview
 
 ## Architecture
 
-ODDOL 2.0 follows a **zero-storage, real-time query** architecture:
+ODDOL 2.0 follows a **no server-side storage, real-time query** architecture:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -99,13 +99,13 @@ ODDOL 2.0 follows a **zero-storage, real-time query** architecture:
 
 ### Key Principles
 
-1. **No Bulk Storage**: Data flows through, never persists
+1. **No ODDOL Server Storage**: ODDOL does not run a backend that stores user queries or datasets
 2. **Real-time Queries**: Live queries to source APIs
 3. **Browser Processing**: All computation in WebAssembly
 4. **Cursor Pagination**: Stream data in small chunks
 5. **Standards-Based**: SPARQL, DCAT, PROV-O
 
-See [design/ODDOL-2.0-IMPLEMENTATION-PLAN.md](design/ODDOL-2.0-IMPLEMENTATION-PLAN.md) for detailed architecture documentation.
+Note: Browser-local storage is used for short-lived query cache (IndexedDB, 15-minute TTL), recent SQL history (localStorage), and temporary describe drafts (sessionStorage).
 
 ## Project Structure
 
@@ -132,10 +132,12 @@ src/
 
 ## Privacy & Security
 
-- **No Tracking**: No analytics, cookies, or fingerprinting
-- **No Server Storage**: All data stays in your browser
-- **Transparent Queries**: See exactly what APIs are called
-- **Short-lived Cache**: Query results expire in 15 minutes
+- **No First-Party Tracking**: No ODDOL analytics SDK, cookies, or fingerprinting scripts
+- **No ODDOL Server Storage**: ODDOL queries source APIs directly from the browser
+- **Client-side Storage Only**: IndexedDB (query cache), localStorage (SQL history), and sessionStorage (describe drafts)
+- **Short-lived Query Cache**: Query results expire after 15 minutes
+- **Query Transparency (Current State)**: Generated SPARQL is shown in the query builder; full REST request inspection UI is not yet implemented
+- **Third-party Endpoints**: Queries are sent to external APIs (Wikidata, OpenAlex, Zenodo, DataCite), which may keep their own server logs
 
 ## Contributing
 
