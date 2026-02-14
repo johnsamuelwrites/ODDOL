@@ -95,7 +95,15 @@ export class QueryFederationEngine {
 	private determineSources(query: FederatedQuery): string[] {
 		// If specific sources are requested, use those
 		if (query.sources.length > 0) {
-			return query.sources.filter((s) => this.getClient(s) !== null);
+			return query.sources.filter((sourceId) => {
+				if (this.getClient(sourceId) === null) return false;
+
+				const source = DATA_SOURCES.find((s) => s.id === sourceId);
+				if (!source) return false;
+
+				// Keep only sources that support at least one selected entity type.
+				return query.entityTypes.some((entityType) => source.entityTypes.includes(entityType));
+			});
 		}
 
 		// Otherwise, find sources that support the requested entity types
