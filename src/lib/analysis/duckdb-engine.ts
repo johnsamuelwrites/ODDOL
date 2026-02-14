@@ -4,6 +4,10 @@
  */
 
 import type { QueryResult, TableSchema, ColumnStats } from '$lib/types';
+import duckdbMvpWasmUrl from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
+import duckdbEhWasmUrl from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import duckdbMvpWorkerUrl from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdbEhWorkerUrl from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
 // ============================================================================
 // DuckDB Types (from @duckdb/duckdb-wasm)
@@ -23,7 +27,7 @@ interface DuckDBBundles {
 
 interface DuckDBBundle {
 	mainModule: string;
-	mainWorker: string | null;
+	mainWorker: string;
 }
 
 interface AsyncDuckDB {
@@ -96,19 +100,29 @@ export class DuckDBAnalysisEngine implements AnalysisEngine {
 	private async doInitialize(): Promise<void> {
 		try {
 			// Dynamic import of DuckDB-WASM
-			this.duckdb = await import('@duckdb/duckdb-wasm');
+			const duckdbModule = (await import('@duckdb/duckdb-wasm')) as unknown as DuckDBModule;
+			this.duckdb = duckdbModule;
 
-			// Select the best bundle for this browser
-			const bundles = this.duckdb.getJsDelivrBundles();
-			const bundle = await this.duckdb.selectBundle(bundles);
+			// Use same-origin static assets to avoid cross-origin worker/wasm issues.
+			const bundles: DuckDBBundles = {
+				mvp: {
+					mainModule: duckdbMvpWasmUrl,
+					mainWorker: duckdbMvpWorkerUrl
+				},
+				eh: {
+					mainModule: duckdbEhWasmUrl,
+					mainWorker: duckdbEhWorkerUrl
+				}
+			};
+			const bundle = await duckdbModule.selectBundle(bundles);
 
 			// Create worker
-			const workerUrl = bundle.mainWorker!;
+			const workerUrl = bundle.mainWorker;
 			const worker = new Worker(workerUrl);
 
 			// Initialize database
-			const logger = new this.duckdb.ConsoleLogger();
-			this.db = new this.duckdb.AsyncDuckDB(logger, worker);
+			const logger = new duckdbModule.ConsoleLogger();
+			this.db = new duckdbModule.AsyncDuckDB(logger, worker);
 			await this.db.instantiate(bundle.mainModule);
 
 			// Create connection
@@ -134,12 +148,30 @@ export class DuckDBAnalysisEngine implements AnalysisEngine {
 
 		// Sanitize table name
 		const safeName = this.sanitizeIdentifier(tableName);
+		const columnNames = Array.from(
+			new Set(data.flatMap((row) => Object.keys(row)))
+		);
 
-		// Create table from JSON data
-		const jsonStr = JSON.stringify(data);
+		if (columnNames.length === 0) {
+			throw new DuckDBError('Cannot load data with no columns');
+		}
+
+		const columnsSql = columnNames
+			.map((name) => `"${this.escapeIdentifier(name)}" ${this.inferColumnType(data, name)}`)
+			.join(', ');
+
+		await this.conn!.query(`CREATE OR REPLACE TABLE ${safeName} (${columnsSql})`);
+
+		const valuesSql = data
+			.map((row) => {
+				const values = columnNames.map((column) => this.toSqlValue(row[column]));
+				return `(${values.join(', ')})`;
+			})
+			.join(', ');
+
 		await this.conn!.query(`
-			CREATE OR REPLACE TABLE ${safeName} AS
-			SELECT * FROM read_json_auto('${this.escapeString(jsonStr)}')
+			INSERT INTO ${safeName} (${columnNames.map((c) => `"${this.escapeIdentifier(c)}"`).join(', ')})
+			VALUES ${valuesSql}
 		`);
 	}
 
@@ -195,10 +227,14 @@ export class DuckDBAnalysisEngine implements AnalysisEngine {
 		try {
 			const result = await this.conn!.query(sql);
 			const executionTime = performance.now() - startTime;
+			const columns = result.schema.fields.map((f) => f.name);
+			const rows = result.toArray().map((row) =>
+				columns.map((column) => (row as Record<string, unknown>)[column])
+			);
 
 			return {
-				columns: result.schema.fields.map((f) => f.name),
-				rows: result.toArray().map((row) => Object.values(row as object)),
+				columns,
+				rows,
 				rowCount: result.numRows,
 				executionTime
 			};
@@ -370,8 +406,36 @@ export class DuckDBAnalysisEngine implements AnalysisEngine {
 		return name.replace(/[^\w]/g, '_');
 	}
 
+	private escapeIdentifier(name: string): string {
+		return name.replace(/"/g, '""');
+	}
+
 	private escapeString(str: string): string {
 		return str.replace(/'/g, "''");
+	}
+
+	private inferColumnType(data: Record<string, unknown>[], column: string): string {
+		for (const row of data) {
+			const value = row[column];
+			if (value === null || value === undefined) continue;
+
+			if (typeof value === 'number') {
+				return Number.isInteger(value) ? 'BIGINT' : 'DOUBLE';
+			}
+			if (typeof value === 'boolean') return 'BOOLEAN';
+			return 'VARCHAR';
+		}
+
+		return 'VARCHAR';
+	}
+
+	private toSqlValue(value: unknown): string {
+		if (value === null || value === undefined) return 'NULL';
+		if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'NULL';
+		if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
+		if (typeof value === 'string') return `'${this.escapeString(value)}'`;
+		if (value instanceof Date) return `'${this.escapeString(value.toISOString())}'`;
+		return `'${this.escapeString(JSON.stringify(value))}'`;
 	}
 
 	private inferFormat(url: string): 'csv' | 'json' | 'parquet' {

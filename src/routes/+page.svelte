@@ -216,7 +216,7 @@
 				</div>
 				<h3 class="font-semibold text-gray-900 mb-2">Describe</h3>
 				<p class="text-sm text-gray-600">
-					Document your analysis with provenance tracking
+					Document your analysis methods and data sources
 				</p>
 			</div>
 

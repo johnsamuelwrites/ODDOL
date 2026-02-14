@@ -127,6 +127,10 @@ function createAnalysisStore() {
 			update((state) => ({ ...state, sqlQuery: sql }));
 		},
 
+		setError(error: string | null) {
+			update((state) => ({ ...state, error }));
+		},
+
 		async executeQuery(sql: string) {
 			update((state) => ({ ...state, isLoading: true, error: null, sqlQuery: sql }));
 

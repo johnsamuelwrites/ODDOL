@@ -3,7 +3,8 @@
 	import { page } from '$app/stores';
 	import { analysisStore, currentSchema, dataPreview, isAnalyzing, analysisError } from '$lib/stores/analysis';
 	import { getVisualizationService } from '$lib/visualization';
-	import type { ChartConfig, ChartType } from '$lib/types';
+	import { getFederationEngine } from '$lib/federation';
+	import type { ChartConfig, ChartType, UnifiedEntity } from '$lib/types';
 
 	let sqlQuery = '';
 	let queryResult: { columns: string[]; rows: unknown[][] } | null = null;
@@ -13,17 +14,67 @@
 	let chartYColumn = '';
 
 	const visualizationService = getVisualizationService();
+	const federationEngine = getFederationEngine();
 
 	onMount(async () => {
 		await analysisStore.initialize();
 
-		// Check if we have an entity ID from URL
-		const entityId = $page.url.searchParams.get('id');
-		if (entityId) {
-			// Load entity data - for demo, we'll show sample data loading
-			console.log('Loading entity:', entityId);
-		}
+		await loadEntityFromQueryParam();
 	});
+
+	async function loadEntityFromQueryParam() {
+		const entityId = $page.url.searchParams.get('id');
+		if (!entityId) return;
+
+		try {
+			analysisStore.setError(null);
+			const entity = await federationEngine.getEntity(entityId);
+
+			if (!entity) {
+				analysisStore.setError(`Unable to load entity "${entityId}"`);
+				return;
+			}
+
+			const tableName = 'entity_data';
+			await analysisStore.loadData([entityToRow(entity)], tableName);
+			sqlQuery = `SELECT * FROM ${tableName}`;
+			const result = await analysisStore.executeQuery(sqlQuery);
+			if (result) {
+				queryResult = result;
+			}
+
+			if ($currentSchema?.columns.length) {
+				chartXColumn = $currentSchema.columns[0].name;
+				chartYColumn = $currentSchema.columns[1]?.name || '';
+			}
+		} catch (error) {
+			analysisStore.setError(
+				error instanceof Error ? error.message : 'Failed to load entity for analysis'
+			);
+		}
+	}
+
+	function entityToRow(entity: UnifiedEntity): Record<string, unknown> {
+		return {
+			id: entity.id,
+			type: entity.type,
+			title: entity.title,
+			description: entity.description || null,
+			doi: entity.identifiers.doi || null,
+			wikidata: entity.identifiers.wikidata || null,
+			openalex: entity.identifiers.openalex || null,
+			zenodo: entity.identifiers.zenodo || null,
+			datacite: entity.identifiers.datacite || null,
+			created: entity.created || null,
+			modified: entity.modified || null,
+			url: entity.url || null,
+			publisher: entity.publisher?.name || null,
+			license: entity.license?.name || null,
+			creators: entity.creators?.map((c) => c.name).join('; ') || null,
+			source_ids: entity.sources.map((s) => s.sourceId).join(', '),
+			metadata_json: entity.metadata ? JSON.stringify(entity.metadata) : null
+		};
+	}
 
 	async function handleLoadSampleData() {
 		const sampleData = [

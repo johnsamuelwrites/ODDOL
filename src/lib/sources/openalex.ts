@@ -6,6 +6,7 @@
 import type { DataSource, EntityType, UnifiedEntity } from '$lib/types';
 import type { SourceClient, SourceQuery, SourceResult } from './types';
 import { DATA_SOURCES } from './types';
+import { browser } from '$app/environment';
 
 // ============================================================================
 // OpenAlex Types
@@ -69,6 +70,7 @@ export class OpenAlexClient implements SourceClient {
 	readonly config: DataSource;
 	private readonly baseUrl: string;
 	private readonly userAgent = 'ODDOL/2.0 (mailto:contact@oddol.org)';
+	private readonly mailto = 'contact@oddol.org';
 
 	constructor() {
 		this.config = DATA_SOURCES.find((s) => s.id === 'openalex')!;
@@ -106,7 +108,7 @@ export class OpenAlexClient implements SourceClient {
 	async isAvailable(): Promise<boolean> {
 		try {
 			const response = await fetch(`${this.baseUrl}/works?per_page=1`, {
-				headers: { 'User-Agent': this.userAgent }
+				headers: this.getHeaders()
 			});
 			return response.ok;
 		} catch {
@@ -119,13 +121,12 @@ export class OpenAlexClient implements SourceClient {
 	// ============================================================================
 
 	private async fetchApi<T>(endpoint: string, params?: URLSearchParams): Promise<T> {
-		const url = params ? `${this.baseUrl}${endpoint}?${params}` : `${this.baseUrl}${endpoint}`;
+		const requestParams = params ? new URLSearchParams(params) : new URLSearchParams();
+		requestParams.set('mailto', this.mailto);
+		const url = `${this.baseUrl}${endpoint}?${requestParams.toString()}`;
 
 		const response = await fetch(url, {
-			headers: {
-				Accept: 'application/json',
-				'User-Agent': this.userAgent
-			}
+			headers: this.getHeaders()
 		});
 
 		if (!response.ok) {
@@ -133,6 +134,11 @@ export class OpenAlexClient implements SourceClient {
 		}
 
 		return response.json();
+	}
+
+	private getHeaders(): HeadersInit {
+		// Browser requests cannot set User-Agent and may fail CORS preflight.
+		return browser ? { Accept: 'application/json' } : { Accept: 'application/json', 'User-Agent': this.userAgent };
 	}
 
 	// ============================================================================
