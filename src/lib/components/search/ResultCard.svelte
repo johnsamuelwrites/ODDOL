@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { UnifiedEntity } from '$lib/types';
+	import { base } from '$app/paths';
 
 	export let entity: UnifiedEntity;
 	export let searchQuery = '';
@@ -73,7 +74,7 @@
 			params.set('sources', sourceIds);
 		}
 
-		return `/analyze?${params.toString()}`;
+		return `${base}/analyze?${params.toString()}`;
 	}
 </script>
 

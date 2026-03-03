@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { analysisStore, currentSchema, isAnalyzing, analysisError } from '$lib/stores/analysis';
 	import { getVisualizationService } from '$lib/visualization';
@@ -392,7 +393,7 @@
 		};
 
 		sessionStorage.setItem(DESCRIBE_DRAFT_KEY, JSON.stringify(describeDraft));
-		await goto('/describe?from=analyze');
+		await goto(`${base}/describe?from=analyze`);
 	}
 </script>
 
