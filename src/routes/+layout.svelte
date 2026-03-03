@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 
 	const navItems = [
 		{ href: '/', label: 'Search', icon: 'search' },
@@ -10,6 +11,11 @@
 	];
 
 	$: currentPath = $page.url.pathname;
+	$: normalizedPath = currentPath.startsWith(base) ? currentPath.slice(base.length) || '/' : currentPath;
+
+	function appHref(path: string): string {
+		return path === '/' ? `${base}/` : `${base}${path}`;
+	}
 </script>
 
 <div class="min-h-screen flex flex-col">
@@ -18,7 +24,7 @@
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between h-16">
 				<!-- Logo -->
-				<a href="/" class="flex items-center space-x-3">
+				<a href={appHref('/')} class="flex items-center space-x-3">
 					<svg class="w-8 h-8" viewBox="0 0 32 32" fill="currentColor">
 						<circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2" />
 						<circle cx="16" cy="16" r="8" fill="currentColor" opacity="0.3" />
@@ -31,9 +37,9 @@
 				<nav class="hidden md:flex items-center space-x-1">
 					{#each navItems as item}
 						<a
-							href={item.href}
+							href={appHref(item.href)}
 							class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
-								{currentPath === item.href
+								{normalizedPath === item.href
 								? 'bg-white/20 text-white'
 								: 'text-white/80 hover:text-white hover:bg-white/10'}"
 						>
@@ -66,9 +72,9 @@
 			<div class="flex justify-around">
 				{#each navItems as item}
 					<a
-						href={item.href}
+						href={appHref(item.href)}
 						class="flex-1 py-3 text-center text-sm font-medium transition-colors
-							{currentPath === item.href
+							{normalizedPath === item.href
 							? 'bg-white/20 text-white'
 							: 'text-white/80 hover:text-white'}"
 					>
